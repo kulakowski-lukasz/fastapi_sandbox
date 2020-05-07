@@ -28,7 +28,7 @@ async def get_tracks(page=0, per_page=10):
     return data
 
 
-@app.get("/tracks/composer", status_code=200)
+@app.get("/tracks/composers", status_code=200)
 async def get_composer_tracks(composer_name: str):
     cursor = app.db_connection.cursor()
     # extract data
