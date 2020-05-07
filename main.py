@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response, status
 import sqlite3
 
 app = FastAPI()
@@ -29,12 +29,13 @@ async def get_tracks(page=0, per_page=10):
 
 
 @app.get("/tracks/composers")
-async def get_composer_tracks(composer_name: str):
+async def get_composer_tracks(response: Response, composer_name: str):
     cursor = app.db_connection.cursor()
     # extract data
     data = cursor.execute('''
     SELECT Name FROM tracks WHERE Composer = ? ORDER BY Name
     ''', (composer_name, )).fetchall()
     if data == []:
-       raise HTTPException(status_code=404, detail="Composer not found")
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"detail":{"error":"Composer not found"}}
     return [item["Name"] for item in data]
