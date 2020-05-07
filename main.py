@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import sqlite3
 
 app = FastAPI()
@@ -8,7 +8,7 @@ app = FastAPI()
 @app.on_event("startup")
 async def startup():
     app.db_connection = sqlite3.connect('chinook.db')
-
+    app.db_connection.row_factory = sqlite3.Row
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -17,8 +17,6 @@ async def shutdown():
 
 @app.get("/tracks", status_code=200)
 async def get_tracks(page=0, per_page=10):
-    # map responses to dicts
-    app.db_connection.row_factory = sqlite3.Row
     # start cursor
     cursor = app.db_connection.cursor()
     # calculate offset
@@ -28,3 +26,15 @@ async def get_tracks(page=0, per_page=10):
     SELECT * FROM tracks LIMIT ? OFFSET ?
     ''', (per_page, offset)).fetchall()
     return data
+
+
+@app.get("/tracks/composer", status_code=200)
+async def get_composer_tracks(composer_name: str):
+    cursor = app.db_connection.cursor()
+    # extract data
+    data = cursor.execute('''
+    SELECT Name FROM tracks WHERE Composer = ?
+    ''', (composer_name, )).fetchall()
+    if data == []:
+       raise HTTPException(status_code=404, detail="Composer not found")
+    return [item["Name"] for item in data]
