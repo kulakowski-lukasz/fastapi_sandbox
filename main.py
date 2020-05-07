@@ -28,12 +28,12 @@ async def get_tracks(page=0, per_page=10):
     return data
 
 
-@app.get("/tracks/composers", status_code=200)
+@app.get("/tracks/composers")
 async def get_composer_tracks(composer_name: str):
     cursor = app.db_connection.cursor()
     # extract data
     data = cursor.execute('''
-    SELECT Name FROM tracks WHERE Composer = ?
+    SELECT Name FROM tracks WHERE Composer = ? ORDER BY Name
     ''', (composer_name, )).fetchall()
     if data == []:
        raise HTTPException(status_code=404, detail="Composer not found")
