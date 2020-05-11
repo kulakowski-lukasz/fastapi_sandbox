@@ -111,7 +111,7 @@ async def get_sales(response: Response, category: str = Query("customers")):
             SELECT customers.CustomerId, customers.Email, customers.Phone, round(sum(invoices.total),2) AS Sum FROM customers 
             LEFT JOIN invoices ON customers.CustomerId = invoices.CustomerId
             GROUP BY customers.CustomerId
-            ORDER BY Sum
+            ORDER BY Sum DESC
             ''').fetchall()
         return data
     else:
