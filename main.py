@@ -117,7 +117,7 @@ async def get_sales(response: Response, category: str = Query("customers")):
     elif category == "genres":
         app.db_connection.row_factory = sqlite3.Row
         data = app.db_connection.execute('''
-            SELECT genres.Name, round(sum(invoice_items.UnitPrice), 2) as Sum FROM invoice_items
+            SELECT genres.Name, sum(invoice_items.Quantity) as Sum FROM invoice_items
             LEFT JOIN tracks ON invoice_items.TrackId = tracks.TrackId
             LEFT JOIN genres ON tracks.GenreId = genres.GenreId
             GROUP BY genres.Name
