@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Response, status
+from fastapi import FastAPI, HTTPException, Response, status, Request, Query
 import sqlite3
 from pydantic import BaseModel
 
@@ -53,7 +53,6 @@ async def add_albums(response: Response, album: Album):
     data = app.db_connection.execute('''
         SELECT Name FROM artists WHERE ArtistId = ?
         ''', (album.artist_id, )).fetchone()
-    print(data)
     if data is None:
         response.status_code = status.HTTP_404_NOT_FOUND
         return {"detail": {"error": f"Artist with id {album.artist_id} was not found"}}
@@ -77,6 +76,51 @@ async def get_album(response: Response, album_id: int):
         response.status_code = status.HTTP_404_NOT_FOUND
         return {"detail": {"error": "Album not found"}}
     return data
+
+class UpdateCustomer(BaseModel):
+    company: str
+    address: str
+    city: str
+    state: str
+    country: str
+    postalcode: str
+    fax: str
+
+@app.put("/customers/{customer_id}")
+async def update_customer(response: Response, customer_id: int, update: UpdateCustomer):
+    app.db_connection.row_factory = sqlite3.Row
+    data = app.db_connection.execute('''
+        SELECT * FROM customers WHERE CustomerId = ?
+        ''', (customer_id, )).fetchone()
+    if data is None:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"detail": {"error": f"Customer with id {customer_id} was not found"}}
+    return data
+    #TODO: tutaj dokonczyć
+
+
+@app.get("/sales")
+async def get_sales(response: Response, category: str = Query("customers")):
+    column = category.capitalize()
+    if column == "Postalcode":
+        column = "PostalCode"
+
+    if category == "customers":
+        app.db_connection.row_factory = sqlite3.Row
+        data = app.db_connection.execute('''
+            SELECT customers.*, round(sum(invoices.total),2) AS SumTotal FROM customers 
+            LEFT JOIN invoices ON customers.CustomerId = invoices.CustomerId
+            GROUP BY customers.CustomerId
+            ORDER BY SumTotal
+            ''').fetchall()
+        return data
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"detail": {"error": f"Data for summary was not found"}}
+
+    
+
+
 
 # new_artist_id = cursor.lastrowid
 # artist = app.db_connection.execute(
