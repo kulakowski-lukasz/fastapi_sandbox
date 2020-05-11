@@ -114,13 +114,24 @@ async def get_sales(response: Response, category: str = Query("customers")):
             ORDER BY Sum DESC
             ''').fetchall()
         return data
+    elif category == "genres":
+        app.db_connection.row_factory = sqlite3.Row
+        data = app.db_connection.execute('''
+            SELECT genres.Name, round(sum(invoice_items.UnitPrice), 2) as Sum FROM invoice_items
+            LEFT JOIN tracks ON invoice_items.TrackId = tracks.TrackId
+            LEFT JOIN genres ON tracks.GenreId = genres.GenreId
+            GROUP BY genres.Name
+            ORDER BY Sum DESC
+            ''').fetchall()
+        return data
     else:
         response.status_code = status.HTTP_404_NOT_FOUND
         return {"detail": {"error": f"Data for summary was not found"}}
 
     
 
-
+#laczna liczba sprzedanych utworow w poszczeglonych gatunkach muzycznych
+# invoice_items <- tracks <- genres
 
 # new_artist_id = cursor.lastrowid
 # artist = app.db_connection.execute(
