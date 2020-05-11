@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Response, status
 import sqlite3
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -8,7 +9,7 @@ app = FastAPI()
 @app.on_event("startup")
 async def startup():
     app.db_connection = sqlite3.connect('chinook.db')
-    app.db_connection.row_factory = sqlite3.Row
+
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -17,6 +18,7 @@ async def shutdown():
 
 @app.get("/tracks", status_code=200)
 async def get_tracks(page=0, per_page=10):
+    app.db_connection.row_factory = sqlite3.Row
     # start cursor
     cursor = app.db_connection.cursor()
     # calculate offset
@@ -37,5 +39,46 @@ async def get_composer_tracks(response: Response, composer_name: str):
     ''', (composer_name, )).fetchall()
     if data == []:
         response.status_code = status.HTTP_404_NOT_FOUND
-        return {"detail":{"error":"Composer not found"}}
+        return {"detail": {"error": "Composer not found"}}
     return [item["Name"] for item in data]
+
+
+class Album(BaseModel):
+    title: str
+    artist_id: int
+
+
+@app.post("/albums", status_code=201)
+async def add_albums(response: Response, album: Album):
+    data = app.db_connection.execute('''
+        SELECT Name FROM artists WHERE ArtistId = ?
+        ''', (album.artist_id, )).fetchone()
+    print(data)
+    if data is None:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"detail": {"error": f"Artist with id {album.artist_id} was not found"}}
+    cursor = app.db_connection.execute('''
+        INSERT INTO albums (Title, ArtistId) VALUES (?,?)
+        ''', (album.title,album.artist_id))
+    app.db_connection.commit()
+    new_album_id = cursor.lastrowid
+    return {"AlbumId": new_album_id, "Title": album.title, "ArtistId": album.artist_id}
+
+
+@app.get("/albums/{album_id}")
+async def get_album(response: Response, album_id: int):
+    app.db_connection.row_factory = sqlite3.Row
+    cursor = app.db_connection.cursor()
+    # extract data
+    data = cursor.execute('''
+    SELECT * FROM albums WHERE AlbumId = ?
+    ''', (album_id, )).fetchone()
+    if data == None:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"detail": {"error": "Album not found"}}
+    return data
+
+# new_artist_id = cursor.lastrowid
+# artist = app.db_connection.execute(
+
+# )
