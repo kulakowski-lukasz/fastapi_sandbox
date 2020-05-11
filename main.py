@@ -108,10 +108,10 @@ async def get_sales(response: Response, category: str = Query("customers")):
     if category == "customers":
         app.db_connection.row_factory = sqlite3.Row
         data = app.db_connection.execute('''
-            SELECT customers.CustomerId, customers.Email, customers.Phone, round(sum(invoices.total),2) AS SumTotal FROM customers 
+            SELECT customers.CustomerId, customers.Email, customers.Phone, round(sum(invoices.total),2) AS Sum FROM customers 
             LEFT JOIN invoices ON customers.CustomerId = invoices.CustomerId
             GROUP BY customers.CustomerId
-            ORDER BY SumTotal
+            ORDER BY Sum
             ''').fetchall()
         return data
     else:
